@@ -449,7 +449,7 @@ function make_name_editable($name) {
 
     // If name is empty, set it to "Untitled".
     if ($name.text().trim().length === 0) {
-        $name.text("untitled...")
+        $name.text("untitled")
         // Get the row and set the name to "untitled".
         $name.css("font-style", "italic")
     }
@@ -471,6 +471,8 @@ function make_name_editable($name) {
     $name.attr("contenteditable", "false")
     let $row = $name.closest("tr")
     let newTitle = $name.text()
+    let inputID = $row.data("inputID")
+    let rowId = $row.data("rowId")
     newTitle = newTitle.trim()
     if (newTitle.length === 0) {
         newTitle = validateName($row.data("inputID"), "untitled", $row)
@@ -478,14 +480,14 @@ function make_name_editable($name) {
         $name.css("font-style", "italic")
         $row.data("name", "")
       // $name.text($row.data("name"))
+        Shiny.setInputValue(inputID, {"action": "name_change", "id": rowId, "name": ""}, {priority: "event"})
+
 
     } else {
       newTitle = validateName($row.data("inputID"), newTitle, $row)
       $row.data("name", newTitle)
       $name.text(newTitle)
       $name.css("font-style", "normal")
-      let inputID = $row.data("inputID")
-      let rowId = $row.data("rowId")
       Shiny.setInputValue(inputID, {"action": "name_change", "id": rowId, "name": newTitle}, {priority: "event"})
     }
     })
