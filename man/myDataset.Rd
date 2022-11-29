@@ -2,34 +2,15 @@
 % Please edit documentation in R/myDataset.R
 \name{myDataset}
 \alias{myDataset}
-\title{Show an alert}
+\title{Construct a myDataset widget}
 \usage{
 myDataset(id, session = shiny::getDefaultReactiveDomain())
 }
 \arguments{
-\item{session}{A valid shiny \code{session}.}
+\item{id}{The id of the widget}
 
-\item{msg}{Message to display.}
+\item{session}{A valid shiny \code{session}.}
 }
 \description{
-Show a vanilla JavaScript alert.
-}
-\examples{
-library(shiny)
-
-ui <- fluidPage(
-  use_name(),
-  verbatimTextOutput("response")
-)
-
-server <- function(input, output){
-myDataset("Please enter something:")
- output$response <- renderPrint({
-   input$myDatasetResponse
- })
-}
-
-if(interactive())
- shinyApp(ui, server)
-
+Construct a myDataset widget
 }

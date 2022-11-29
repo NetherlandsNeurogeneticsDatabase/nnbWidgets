@@ -1,10 +1,5 @@
 import "shiny";
-import { saveAs } from "file-saver"
-
-// Shiny.addCustomMessageHandler('myDataset-alert", (msg) => {
-//   let response = prompt(msg);
-//   Shiny.setInputValue('myDatasetResponse', response);
-// })
+import { saveAs } from "file-saver";
 
 
 Shiny.addCustomMessageHandler("build-myDataset", (data) => {  
@@ -26,12 +21,18 @@ Shiny.addCustomMessageHandler("add-row-myDataset", (data) => {
 })
 
 Shiny.addCustomMessageHandler("download-handler-myDataset", (data) => {
+    /**
+     * A handler that downloads the data. This is called when the user clicks the download button.
+     * The data is sent to the server and the server sends it back to the client.
+     * @param data The data to download.
+     * @param extension The extension of the file.
+     * @param filename The name of the file.
+     */
     // Check if data has the following properties: [filename, extension, content]
     if (data.hasOwnProperty("filename") && data.hasOwnProperty("extension") && data.hasOwnProperty("content")) {
         if (data["extension"] === "csv") {
             // let blob = new Blob(convertToCSV([data["content"]]), {type: "text/csv;charset=utf-8"})
             // Convert the data["content"] to a csv string and save it as a blob.
-            console.log(data["content"])
             let blob = new Blob([data["content"]], {type: "text/csv;charset=utf-8"})
 
             saveAs(blob, data["filename"] + "." + data["extension"])
@@ -47,25 +48,33 @@ Shiny.addCustomMessageHandler("download-handler-myDataset", (data) => {
     }
 })
 
-function convertToCSV(arr) {
-    /**
-     * Convert an array of objects to a csv string.
-     * @param arr The array of objects.
-     * @returns {string}
-     */
-    let header = Object.keys(arr[0]).join(",") + "\n"
 
-    // Get the values of each object by mapping the object to an array of values. Then join the array with a comma.
+Shiny.addCustomMessageHandler("toggle-download-button", (data) => {
+    let parentID = data["parentID"]
+    let datasetID = data["datasetID"]
+    let action = data["action"]
 
-    let values = arr.map(function (obj) {
-        return Object.values(obj)
-    }).map(function (arr) {
-        return arr.join(",")
-    }).join("\n")
+    // If action is not show or hide, do nothing.
+    if (action !== "show" && action !== "hide") {
+        console.log("Error: Action must be either show or hide.")
+        return
+    }
 
-    let csv = header + values
-    return csv
-}
+    // Get the download button which is inside the $row with id "download-data-" + datasetID
+    let $downloadButton = $("#" + parentID).find("#download-data-" + datasetID)
+
+
+    // If the action is "show", show the button. Otherwise, 'hide' the button.
+
+    if (action === "show") {
+        $downloadButton.data("blocked", false)
+        $downloadButton.css("text-decoration", "none")
+    } else {
+        $downloadButton.data("blocked", true)
+        $downloadButton.css("text-decoration", "line-through")
+    }
+})
+
 
 
 function row_in_table(table, checkParam, paramValue, $ownRow) {
@@ -100,7 +109,7 @@ function validateName(id, name, $row) {
      * Validate the name of the dataset. If the name already exists, append a number to the end.
      * @param id The id of the parent element.
      * @param name The name of the dataset.
-     * @returns {string
+     * @returns {string} The validated name.
      * @type {*|jQuery|HTMLElement}
      */
     let $table = $("#my-dataset-table-" + id)
@@ -190,9 +199,6 @@ function addRowToCustomDatasetTable(id, rowId, name, size) {
 
     // Get the current date
     let date = new Date()
-
-
-    console.log(`Adding row to custom dataset table: ${id}, ${rowId}, ${name}, ${size}`)
     let $table = $("#my-dataset-table-" + id)
     let $tbody = $table.find("tbody")
     let $row = $("<tr id='my-dataset-row-" + rowId + "' class='allign-middle'></tr>")
@@ -218,7 +224,6 @@ function addRowToCustomDatasetTable(id, rowId, name, size) {
 }
 
 function download_data_pressed(rowId) {
-    console.log("download data pressed")
     // Get the id of the parent element.
     let $row = $("#my-dataset-row-" + rowId)
 
@@ -228,8 +233,7 @@ function download_data_pressed(rowId) {
 
     // Get the parent id
     let inputID = $row.data("inputID")
-    console.log(`inputID: ${inputID}`)
-    console.log(`id: ${id}`)
+
     Shiny.setInputValue(inputID, {"action": "download_data", "id": id}, {priority: "event"})
 
 }
@@ -242,14 +246,10 @@ function downloadFilter(){
 }
 
 function download_filter_pressed(rowId) {
-    console.log("download filter pressed")
     let $row = $("#my-dataset-row-" + rowId)
     let id = $row.data("rowId")
     let inputID = $row.data("inputID")
-    console.log(`inputID: ${inputID}`)
-    console.log(`id: ${id}`)
 
-    // downloadFilter()
     Shiny.setInputValue(inputID, {"action": "download_filter", "id": id}, {priority: "event"})
 }
 
@@ -268,11 +268,22 @@ function createDownloadDropdown(id, rowId) {
     $dropdownMenu.attr("aria-labelledby", dropdownID)
 
     let $downloadDataButton = $("<li><a class='dropdown-item' href='#'><i class='fas fa-file-arrow-down'></i> Download data</a></li>")
+    $downloadDataButton.attr("id", "download-data-" + rowId)
+    $downloadDataButton.data("blocked", false)
+
     $downloadDataButton.on("click", function () {
-        download_data_pressed(rowId)
+        if ($downloadDataButton.data("blocked") === false) {
+            download_data_pressed(rowId)
+        } else {
+            alert(
+                `This dataset is currently being processed for download. Please wait until the download is complete.\n\n` +
+                "(The download can take a while if the dataset is large, and clinical history data is included.)"
+            )
+        }
     })
 
     let $downloadFilterButton = $("<li><a class='dropdown-item' href='#'><i class='fas fa-filter'></i> Download filters</a></li>")
+    $downloadFilterButton.attr("id", "download-filter-" + rowId)
     $downloadFilterButton.on("click", function () {
         download_filter_pressed(rowId)
     })
@@ -302,11 +313,6 @@ function create_actions(id, rowId){
 
 
     // Create the download button, set a tooltip and add it to the actions column.
-    // let $download = $("<button class='btn btn-primary btn-sm' id='my-dataset-table-" + id + "-download-" + rowId + "'><i class='fas fa-download'></i></button>")
-    // $download.attr("title", "Download")
-    // $btnGroup.append($download)
-
-
 
     let $deleteButton = $("<button class='btn btn-danger btn-sm' type='button' data-toggle='tooltip' data-placement='top' title='Delete'></button>")
     $deleteButton.append("<i class='fas fa-trash-alt'></i>")
@@ -315,7 +321,7 @@ function create_actions(id, rowId){
         let name = $row.data("name") ? '"' + $row.data("name") +'"' : "this unnamed dataset"
 
         if (confirm(`Are you sure you want to delete ${name}?`)) {
-            let inputID = $("#my-dataset-row-" + rowId).data("inputID")
+            let inputID = $row.data("inputID")
             Shiny.setInputValue(inputID, {"action": "delete", "id": rowId}, {priority: "event"})
             deleteRow(id, rowId)
         }
@@ -455,7 +461,7 @@ function make_name_editable($name) {
     })
 
     $name.keypress(function (e) {
-      if (e.which == 13) {
+      if (e.which === 13) {
           $name.attr("contenteditable", false)
           $name.blur()
       }
