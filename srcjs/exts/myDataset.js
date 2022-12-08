@@ -1,5 +1,7 @@
 import "shiny";
 import { saveAs } from "file-saver";
+import swal from 'sweetalert'
+import xss from "xss";
 
 
 Shiny.addCustomMessageHandler("build-myDataset", (data) => {  
@@ -13,11 +15,12 @@ Shiny.addCustomMessageHandler("build-myDataset", (data) => {
 Shiny.addCustomMessageHandler("add-row-myDataset", (data) => {
     let parent = data["id"]
     let rowId = data["row_id"]
-    let name = data["name"]
+    let name = xss(data["name"])
     let size = data["size"]
     name = validateName(parent, name)
-
-    addRowToCustomDatasetTable(parent, rowId, name, size)
+    if (name !== false){
+        addRowToCustomDatasetTable(parent, rowId, name, size)
+    }
 })
 
 Shiny.addCustomMessageHandler("download-handler-myDataset", (data) => {
@@ -31,11 +34,9 @@ Shiny.addCustomMessageHandler("download-handler-myDataset", (data) => {
     // Check if data has the following properties: [filename, extension, content]
     if (data.hasOwnProperty("filename") && data.hasOwnProperty("extension") && data.hasOwnProperty("content")) {
         if (data["extension"] === "csv") {
-            // let blob = new Blob(convertToCSV([data["content"]]), {type: "text/csv;charset=utf-8"})
-            // Convert the data["content"] to a csv string and save it as a blob.
             let blob = new Blob([data["content"]], {type: "text/csv;charset=utf-8"})
-
             saveAs(blob, data["filename"] + "." + data["extension"])
+
         } else if(data["extension"] === "json"){
             let blob = new Blob([JSON.stringify(data["content"], null, 2)], {type: "text/plain;charset=utf-8"});
             saveAs(blob, data["filename"] + "." + data["extension"]);
@@ -114,17 +115,26 @@ function validateName(id, name, $row) {
      */
     let $table = $("#my-dataset-table-" + id)
     name = name.trim()
-    let i = 1
-    while (row_in_table($table, "name", name, $row)) {
-        // If the number already has a number at the end in the form of (1), (2), etc. increment the number.
-        if (name.match(/\(\d+\)$/)) {
-            name = name.replace(/\(\d+\)$/, "(" + i + ")")
-        } else {
-            name += " (" + i + ")"
-        }
-        i++
+    if (row_in_table($table, "name", name, $row)) {
+        swal({
+            title: "Name already exists?",
+            text: "Please change the name of the dataset to a name that does not exist.",
+            icon: "warning",
+        })
+    } else {
+        return name
     }
-    return name
+    // let i = 1
+    // while (row_in_table($table, "name", name, $row)) {
+    //     // If the number already has a number at the end in the form of (1), (2), etc. increment the number.
+    //     if (name.match(/\(\d+\)$/)) {
+    //         name = name.replace(/\(\d+\)$/, "(" + i + ")")
+    //     } else {
+    //         name += " (" + i + ")"
+    //     }
+    //     i++
+    // }
+    // return name
 }
 
 function selectAllCheckbox(id){
@@ -236,13 +246,6 @@ function download_data_pressed(rowId) {
 
     Shiny.setInputValue(inputID, {"action": "download_data", "id": id}, {priority: "event"})
 
-}
-
-
-
-function downloadFilter(){
-    let blob = new Blob(["Hello, world!"], {type: "text/plain;charset=utf-8"});
-    saveAs(blob, "hello world.txt");
 }
 
 function download_filter_pressed(rowId) {
@@ -423,7 +426,7 @@ function make_description_editable($description) {
         // Update function
         $description.attr("contenteditable", "false")
         let $row = $description.closest("tr")
-        let newDescription = $description.text()
+        let newDescription = xss($description.text())
         newDescription = newDescription.trim()
 
         if (newDescription.length === 0) {
@@ -447,13 +450,6 @@ function make_name_editable($name) {
     * @returns NULL
     */
 
-    // If name is empty, set it to "Untitled".
-    if ($name.text().trim().length === 0) {
-        $name.text("untitled")
-        // Get the row and set the name to "untitled".
-        $name.css("font-style", "italic")
-    }
-
     $name.click(function () {
       $name.attr("contenteditable", "true")
       $name.focus()
@@ -470,25 +466,34 @@ function make_name_editable($name) {
     $name.blur(function () {
     $name.attr("contenteditable", "false")
     let $row = $name.closest("tr")
-    let newTitle = $name.text()
+    let newTitle = xss($name.text())
     let inputID = $row.data("inputID")
     let rowId = $row.data("rowId")
     newTitle = newTitle.trim()
     if (newTitle.length === 0) {
-        newTitle = validateName($row.data("inputID"), "untitled", $row)
-        $name.text(newTitle)
-        $name.css("font-style", "italic")
-        $row.data("name", "")
-      // $name.text($row.data("name"))
-        Shiny.setInputValue(inputID, {"action": "name_change", "id": rowId, "name": ""}, {priority: "event"})
-
-
+        $name.text($row.data("name"))
+        swal({
+            title: "Error",
+            text: "The name cannot be empty.",
+            icon: "error",
+        })
+    } else if (newTitle.length > 50) {
+        $name.text($row.data("name"))
+        swal({
+            title: "Error",
+            text: "The name cannot be longer than 50 characters.",
+            icon: "error",
+        })
     } else {
-      newTitle = validateName($row.data("inputID"), newTitle, $row)
-      $row.data("name", newTitle)
-      $name.text(newTitle)
-      $name.css("font-style", "normal")
-      Shiny.setInputValue(inputID, {"action": "name_change", "id": rowId, "name": newTitle}, {priority: "event"})
+        if (validateName($row.data("inputID"), newTitle, $row)) {
+            $row.data("name", newTitle)
+            $name.text(newTitle)
+            $name.css("font-style", "normal")
+            Shiny.setInputValue(inputID, {"action": "name_change", "id": rowId, "name": newTitle}, {priority: "event"})
+        } else {
+            // Name is not valid so we set it back to the old name.
+            $name.text($row.data("name"))
+        }
     }
     })
 }
