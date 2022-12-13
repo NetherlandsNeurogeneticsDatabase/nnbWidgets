@@ -8,6 +8,7 @@ myDatasetAddRow(
   id,
   row_id,
   name,
+  description,
   size,
   session = shiny::getDefaultReactiveDomain()
 )

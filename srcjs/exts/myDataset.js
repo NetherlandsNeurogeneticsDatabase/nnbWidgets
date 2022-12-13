@@ -3,7 +3,6 @@ import { saveAs } from "file-saver";
 import swal from 'sweetalert'
 import xss from "xss";
 
-
 Shiny.addCustomMessageHandler("build-myDataset", (data) => {  
   let parent = data["id"]
   let max_rows = data["maxRows"]
@@ -12,14 +11,17 @@ Shiny.addCustomMessageHandler("build-myDataset", (data) => {
     }
 })
 
+
 Shiny.addCustomMessageHandler("add-row-myDataset", (data) => {
     let parent = data["id"]
     let rowId = data["row_id"]
     let name = xss(data["name"])
     let size = data["size"]
+    let description = xss(data["description"])
+
     name = validateName(parent, name)
     if (name !== false){
-        addRowToCustomDatasetTable(parent, rowId, name, size)
+        addRowToCustomDatasetTable(parent, rowId, name, description, size)
     }
 })
 
@@ -77,6 +79,27 @@ Shiny.addCustomMessageHandler("toggle-download-button", (data) => {
 })
 
 
+Shiny.addCustomMessageHandler("set-cookie", (data) => {
+    /**
+     * Add a cookie.
+     * @param name The name of the cookie.
+     * @param msg The message of the cookie.
+     */
+
+    let name = data["name"]
+    let msg = data["msg"]
+
+    console.log("Setting cookie")
+    console.log(msg)
+    // if (Cookies.get(name) !== undefined) {
+    //     Cookies.remove(name)
+    // }
+
+    // Add the cookie.
+    localStorage.setItem(name, JSON.stringify(msg))
+})
+
+
 
 function row_in_table(table, checkParam, paramValue, $ownRow) {
     /**
@@ -124,17 +147,6 @@ function validateName(id, name, $row) {
     } else {
         return name
     }
-    // let i = 1
-    // while (row_in_table($table, "name", name, $row)) {
-    //     // If the number already has a number at the end in the form of (1), (2), etc. increment the number.
-    //     if (name.match(/\(\d+\)$/)) {
-    //         name = name.replace(/\(\d+\)$/, "(" + i + ")")
-    //     } else {
-    //         name += " (" + i + ")"
-    //     }
-    //     i++
-    // }
-    // return name
 }
 
 function selectAllCheckbox(id){
@@ -187,17 +199,25 @@ function buildCustomDatasetTable(id, max_rows=10) {
     // Add the body to the table.
     $table.append("<tbody></tbody>")
     $("#" + id).append($table)
-
-
-
-
-
-
-
-
+    let cookieRows = getRowCookie()
+    if (cookieRows !== undefined) {
+        Shiny.setInputValue(id + "_cookies", cookieRows, {priority: "event"})
+    }
 }
 
-function addRowToCustomDatasetTable(id, rowId, name, size) {
+
+function getRowCookie(){
+    /**
+     * Get the rows from the cookie.
+     * @returns {Array} The rows.
+     */
+    let myDataset = localStorage.getItem("myDataset")
+    if (myDataset !== undefined) {
+        return JSON.parse(myDataset)
+    }
+}
+
+function addRowToCustomDatasetTable(id, rowId, name, description, size) {
     /**
     * Add a row to the custom dataset table.
     * @param id The id of the parent element.
@@ -215,7 +235,7 @@ function addRowToCustomDatasetTable(id, rowId, name, size) {
     $row.data("rowId", rowId)
     $row.data("inputID", id)
     $row.data("name", name)
-    $row.data("description", "")
+    $row.data("description", description)
     $row.data("size", size)
     $row.data("date", date)
 
@@ -226,7 +246,7 @@ function addRowToCustomDatasetTable(id, rowId, name, size) {
     // Add a bootstrap checkbox to the row.
     $row.append("<td class='align-middle'><input type='checkbox' class='form-check-input my-dataset-table-" + id + "-select-row'></td>")
     $row.append(create_name(name))
-    $row.append(create_description(""))
+    $row.append(create_description(description))
     $row.append(create_size(size))
     $row.append(create_actions(id, rowId))
     $tbody.append($row)

@@ -32,8 +32,8 @@ myDataset <- function(id, session = shiny::getDefaultReactiveDomain()){
 #' @param size The size of the dataset
 #'
 #' @export
-myDatasetAddRow <- function(id, row_id, name, size, session = shiny::getDefaultReactiveDomain()){
-  session$sendCustomMessage("add-row-myDataset", list(id = id, row_id = row_id, name = name, size = size))
+myDatasetAddRow <- function(id, row_id, name, description, size, session = shiny::getDefaultReactiveDomain()){
+  session$sendCustomMessage("add-row-myDataset", list(id = id, row_id = row_id, name = name, description = description, size = size))
 }
 
 #' Download a dataset from the myDataset widget
@@ -58,3 +58,13 @@ myDatasetDownloadHandler <- function(filename, extension, content, session = shi
 myDatasetToggleDownload <- function(parentID, datasetID, action="hide", session = shiny::getDefaultReactiveDomain()){
   session$sendCustomMessage("toggle-download-button", list(parentID = parentID, datasetID = datasetID, action = action))
 }
+
+#' Set a cookie
+#'
+#' @param name The name of the cookie
+#' @param value The value of the cookie
+#' @export
+myDatasetSetCookie <- function(name, msg, session = shiny::getDefaultReactiveDomain()){
+  session$sendCustomMessage("set-cookie", list(name = name, msg = msg))
+}
+
