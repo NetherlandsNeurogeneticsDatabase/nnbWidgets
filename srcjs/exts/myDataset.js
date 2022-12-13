@@ -43,11 +43,11 @@ Shiny.addCustomMessageHandler("download-handler-myDataset", (data) => {
             let blob = new Blob([JSON.stringify(data["content"], null, 2)], {type: "text/plain;charset=utf-8"});
             saveAs(blob, data["filename"] + "." + data["extension"]);
         } else {
-            console.log("Extension not supported.")
+            Error("Extension not supported.")
         }
 
     } else {
-        console.log("Error: Data does not have the correct properties.")
+        Error("Data does not have the correct properties.")
     }
 })
 
@@ -59,8 +59,7 @@ Shiny.addCustomMessageHandler("toggle-download-button", (data) => {
 
     // If action is not show or hide, do nothing.
     if (action !== "show" && action !== "hide") {
-        console.log("Error: Action must be either show or hide.")
-        return
+        Error("Action is not show or hide.")
     }
 
     // Get the download button which is inside the $row with id "download-data-" + datasetID
@@ -88,12 +87,6 @@ Shiny.addCustomMessageHandler("set-cookie", (data) => {
 
     let name = data["name"]
     let msg = data["msg"]
-
-    console.log("Setting cookie")
-    console.log(msg)
-    // if (Cookies.get(name) !== undefined) {
-    //     Cookies.remove(name)
-    // }
 
     // Add the cookie.
     localStorage.setItem(name, JSON.stringify(msg))
