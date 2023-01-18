@@ -1,18 +1,39 @@
 import "shiny";
-import { saveAs } from "file-saver";
+import {saveAs} from "file-saver";
 import swal from 'sweetalert'
 import xss from "xss";
 
-Shiny.addCustomMessageHandler("build-myDataset", (data) => {  
-  let parent = data["id"]
-  let max_rows = data["maxRows"]
-    if ($("#" + parent).length > 0) {
+
+Shiny.addCustomMessageHandler("build-myDataset", (data) => {
+    /**
+     * Build the custom dataset table.
+     * @param data The data.
+     * @param data.id The id of the parent element.
+     * @param data.max_rows The maximum number of rows allowed.
+     */
+    let parent = data["id"]
+    let max_rows = data["maxRows"]
+    let $parentElement = $("#" + parent)
+
+    if ($parentElement.length > 0) {
         buildCustomDatasetTable(parent, max_rows);
+
     }
+
+
 })
 
 
 Shiny.addCustomMessageHandler("add-row-myDataset", (data) => {
+    /**
+     * Add a row to the custom dataset table.
+     * @param data The data.
+     * @param data.id The id of the parent element.
+     * @param data.name The name of the dataset.
+     * @param data.description The description of the dataset.
+     * @param data.size The size of the dataset (number of donors).
+     * @param data.rowId The id of the row.
+     */
     let parent = data["id"]
     let rowId = data["row_id"]
     let name = xss(data["name"])
@@ -20,7 +41,7 @@ Shiny.addCustomMessageHandler("add-row-myDataset", (data) => {
     let description = xss(data["description"])
 
     name = validateName(parent, name)
-    if (name !== false){
+    if (name !== false) {
         addRowToCustomDatasetTable(parent, rowId, name, description, size)
     }
 })
@@ -39,7 +60,7 @@ Shiny.addCustomMessageHandler("download-handler-myDataset", (data) => {
             let blob = new Blob([data["content"]], {type: "text/csv;charset=utf-8"})
             saveAs(blob, data["filename"] + "." + data["extension"])
 
-        } else if(data["extension"] === "json"){
+        } else if (data["extension"] === "json") {
             let blob = new Blob([JSON.stringify(data["content"], null, 2)], {type: "text/plain;charset=utf-8"});
             saveAs(blob, data["filename"] + "." + data["extension"]);
         } else {
@@ -53,6 +74,13 @@ Shiny.addCustomMessageHandler("download-handler-myDataset", (data) => {
 
 
 Shiny.addCustomMessageHandler("toggle-download-button", (data) => {
+    /**
+     * Toggle the download button.
+     * @param data The data.
+     * @param data.parent The id of the parent element.
+     * @param data.datasetID The id of the dataset.
+     * @param data.action The action to perform. Either "show" or "hide".
+     */
     let parentID = data["parentID"]
     let datasetID = data["datasetID"]
     let action = data["action"]
@@ -67,7 +95,6 @@ Shiny.addCustomMessageHandler("toggle-download-button", (data) => {
 
 
     // If the action is "show", show the button. Otherwise, 'hide' the button.
-
     if (action === "show") {
         $downloadButton.data("blocked", false)
         $downloadButton.css("text-decoration", "none")
@@ -91,8 +118,6 @@ Shiny.addCustomMessageHandler("set-cookie", (data) => {
     // Add the cookie.
     localStorage.setItem(name, JSON.stringify(msg))
 })
-
-
 
 function row_in_table(table, checkParam, paramValue, $ownRow) {
     /**
@@ -142,52 +167,22 @@ function validateName(id, name, $row) {
     }
 }
 
-function selectAllCheckbox(id){
+function buildCustomDatasetTable(id, max_rows = 10) {
     /**
-     * Create a checkbox for selecting all rows.
+     * Create a table that has 4 columns: name, description, size and buttons.
      * @type {*|jQuery|HTMLElement}
+     * @param id The id of the parent element.
+     * @returns {jQuery|HTMLElement} The table.
      */
-
-    let $checkbox = $("<input class='form-check-input' type='checkbox' id='my-dataset-table-" + id + "-select-all'>")
-
-    // If the checkbox is checked, check all the other checkboxes.
-    $checkbox.change(function () {
-        let $table = $("#my-dataset-table-" + id)
-        let $tbody = $table.find("tbody")
-        let $rows = $tbody.find("tr")
-        $rows.each(function () {
-            $(this).find("input[type='checkbox']").prop("checked", $checkbox.prop("checked"))
-        })
-    })
-
-    return $checkbox
-}
-
-function buildCustomDatasetTable(id, max_rows=10) {
-    /**
-    * Create a table that has 4 columns: name, description, size and buttons.
-    * @type {*|jQuery|HTMLElement}
-    * @param id The id of the parent element.
-    * @returns {jQuery|HTMLElement} The table.
-    */
     let $table = $("<table class='table table-striped' id='my-dataset-table-" + id + "'></table>")
     $table.data("maxRows", max_rows)
-
 
     let headers = ["Name", "Description", "Size", "Actions"]
     // Add the headers to the table.
     $table.append("<thead><tr></tr></thead>")
 
-    // create a checkbox for selecting all rows
-    let $th = $("<th class='align-middle' ></th>")
-
-    $th.append(selectAllCheckbox(id))
-    $table.find("thead tr").append($th)
-
-
-
     headers.forEach(function (header) {
-      $table.find("thead tr").append("<th scope='col'>" + header + "</th>")
+        $table.find("thead tr").append("<th scope='col'>" + header + "</th>")
     })
     // Add the body to the table.
     $table.append("<tbody></tbody>")
@@ -196,10 +191,12 @@ function buildCustomDatasetTable(id, max_rows=10) {
     if (cookieRows !== undefined) {
         Shiny.setInputValue(id + "_cookies", cookieRows, {priority: "event"})
     }
+
+    return $table
 }
 
 
-function getRowCookie(){
+function getRowCookie() {
     /**
      * Get the rows from the cookie.
      * @returns {Array} The rows.
@@ -212,15 +209,15 @@ function getRowCookie(){
 
 function addRowToCustomDatasetTable(id, rowId, name, description, size) {
     /**
-    * Add a row to the custom dataset table.
-    * @param id The id of the parent element.
-    * @param name The name of the dataset.
-    * @param description The description of the dataset.
-    * @param size The size of the dataset.
-    * @returns {jQuery|HTMLElement}
-    */
+     * Add a row to the custom dataset table.
+     * @param id The id of the parent element.
+     * @param name The name of the dataset.
+     * @param description The description of the dataset.
+     * @param size The size of the dataset.
+     * @returns {jQuery|HTMLElement}
+     */
 
-    // Get the current date
+        // Get the current date
     let date = new Date()
     let $table = $("#my-dataset-table-" + id)
     let $tbody = $table.find("tbody")
@@ -234,10 +231,12 @@ function addRowToCustomDatasetTable(id, rowId, name, description, size) {
 
     // Communicating the date time to the server. The date time is created on client side to avoid timezone issues.
     let dateString = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " GMT" + (date.getTimezoneOffset() / 60 * -1)
-    Shiny.setInputValue($row.data("inputID"), {"action": "set_time", "id": rowId, "time": dateString}, {priority: "event"})
+    Shiny.setInputValue($row.data("inputID"), {
+        "action": "set_time",
+        "id": rowId,
+        "time": dateString
+    }, {priority: "event"})
 
-    // Add a bootstrap checkbox to the row.
-    $row.append("<td class='align-middle'><input type='checkbox' class='form-check-input my-dataset-table-" + id + "-select-row'></td>")
     $row.append(create_name(name))
     $row.append(create_description(description))
     $row.append(create_size(size))
@@ -313,9 +312,33 @@ function createDownloadDropdown(id, rowId) {
     return $dropdown
 }
 
-function create_actions(id, rowId){
+function createDeleteButton(id, rowId) {
     /**
-     * Create the actions column.
+     * Create a delete button for the row.
+     * @param id The id of the parent
+     * @param rowId The id of the row.
+     * @returns {jQuery|HTMLElement} The delete button.
+     */
+    let $deleteButton = $("<button class='btn btn-danger btn-sm' type='button' data-toggle='tooltip' data-placement='top' title='Delete'></button>")
+    $deleteButton.append("<i class='fas fa-trash-alt'></i>")
+    $deleteButton.click(function () {
+        let $row = $("#my-dataset-row-" + rowId)
+        let name = $row.data("name") ? '"' + $row.data("name") + '"' : "this unnamed dataset"
+
+        if (confirm(`Are you sure you want to delete ${name}?`)) {
+            let inputID = $row.data("inputID")
+            Shiny.setInputValue(inputID, {"action": "delete", "id": rowId}, {priority: "event"})
+            deleteRow(id, rowId)
+        }
+    })
+    return $deleteButton
+}
+
+
+
+function create_actions(id, rowId) {
+    /**
+     * Create the actions column. This column contains a dropdown menu with two options: download data and download filter.
      * @param id The id of the parent element.
      * @param rowId The id of the row.
      */
@@ -326,61 +349,37 @@ function create_actions(id, rowId){
     $actions.append($btnGroup)
 
     $btnGroup.append(createDownloadDropdown(id, rowId))
-
-
-    // Create the download button, set a tooltip and add it to the actions column.
-
-    let $deleteButton = $("<button class='btn btn-danger btn-sm' type='button' data-toggle='tooltip' data-placement='top' title='Delete'></button>")
-    $deleteButton.append("<i class='fas fa-trash-alt'></i>")
-    $deleteButton.click(function () {
-        let $row = $("#my-dataset-row-" + rowId)
-        let name = $row.data("name") ? '"' + $row.data("name") +'"' : "this unnamed dataset"
-
-        if (confirm(`Are you sure you want to delete ${name}?`)) {
-            let inputID = $row.data("inputID")
-            Shiny.setInputValue(inputID, {"action": "delete", "id": rowId}, {priority: "event"})
-            deleteRow(id, rowId)
-        }
-    })
-    $btnGroup.append($deleteButton)
-
+    $btnGroup.append(createDeleteButton(id, rowId))
 
 
 
     return $actions
 }
 
-function create_size(size){
+function create_size(size) {
     /**
-     * Handles the creation of the size.
+     * Handles the creation of the size TD.
      * @type {*|jQuery|HTMLElement}
      */
     let $td = $("<td class='align-middle'></td>")
+    $td.append($("<p>" + `${size} ${size <= 1 ? "donor" : "donors"}` + "</p>"))
 
-    let sizeText = size + " donor"
-    if (size > 1) {
-        sizeText += "s"
-    }
-
-
-    let $size = $("<p>" + sizeText + "</p>")
-
-    $td.append($size)
     return $td
 }
+
 function create_name(name) {
-  /**
-   * Handles the creation of the title.
-   * @type {*|jQuery|HTMLElement}
-   */
-  let $td = $("<td class='align-middle'></td>")
-  let $name = $("<b>" + name + "</b>")
-  make_name_editable($name)
-  $td.append($name)
-  return $td
+    /**
+     * Handles the creation of the title.
+     * @type {*|jQuery|HTMLElement}
+     */
+    let $td = $("<td class='align-middle'></td>")
+    let $name = $("<b>" + name + "</b>")
+    make_name_editable($name)
+    $td.append($name)
+    return $td
 }
 
-function create_description(description="") {
+function create_description(description = "") {
     /**
      * Handles the creation of the description.
      * @type {*|jQuery|HTMLElement}
@@ -450,7 +449,11 @@ function make_description_editable($description) {
         }
         let inputID = $row.data("inputID")
         let rowId = $row.data("rowId")
-        Shiny.setInputValue(inputID, {"action": "description_change", "id": rowId, "description": newDescription}, {priority: "event"})
+        Shiny.setInputValue(inputID, {
+            "action": "description_change",
+            "id": rowId,
+            "description": newDescription
+        }, {priority: "event"})
         $row.data("description", newDescription)
 
     })
@@ -458,55 +461,59 @@ function make_description_editable($description) {
 
 function make_name_editable($name) {
     /**
-    * Make the title editable. When the user clicks on the title, it will become editable.
-    * @param $title The title.
-    * @returns NULL
-    */
+     * Make the title editable. When the user clicks on the title, it will become editable.
+     * @param $title The title.
+     * @returns NULL
+     */
 
     $name.click(function () {
-      $name.attr("contenteditable", "true")
-      $name.focus()
+        $name.attr("contenteditable", "true")
+        $name.focus()
         $name.css("font-style", "normal")
     })
 
     $name.keypress(function (e) {
-      if (e.which === 13) {
-          $name.attr("contenteditable", false)
-          $name.blur()
-      }
+        if (e.which === 13) {
+            $name.attr("contenteditable", false)
+            $name.blur()
+        }
     })
 
     $name.blur(function () {
-    $name.attr("contenteditable", "false")
-    let $row = $name.closest("tr")
-    let newTitle = xss($name.text())
-    let inputID = $row.data("inputID")
-    let rowId = $row.data("rowId")
-    newTitle = newTitle.trim()
-    if (newTitle.length === 0) {
-        $name.text($row.data("name"))
-        swal({
-            title: "Error",
-            text: "The name cannot be empty.",
-            icon: "error",
-        })
-    } else if (newTitle.length > 50) {
-        $name.text($row.data("name"))
-        swal({
-            title: "Error",
-            text: "The name cannot be longer than 50 characters.",
-            icon: "error",
-        })
-    } else {
-        if (validateName($row.data("inputID"), newTitle, $row)) {
-            $row.data("name", newTitle)
-            $name.text(newTitle)
-            $name.css("font-style", "normal")
-            Shiny.setInputValue(inputID, {"action": "name_change", "id": rowId, "name": newTitle}, {priority: "event"})
-        } else {
-            // Name is not valid so we set it back to the old name.
+        $name.attr("contenteditable", "false")
+        let $row = $name.closest("tr")
+        let newTitle = xss($name.text())
+        let inputID = $row.data("inputID")
+        let rowId = $row.data("rowId")
+        newTitle = newTitle.trim()
+        if (newTitle.length === 0) {
             $name.text($row.data("name"))
+            swal({
+                title: "Error",
+                text: "The name cannot be empty.",
+                icon: "error",
+            })
+        } else if (newTitle.length > 50) {
+            $name.text($row.data("name"))
+            swal({
+                title: "Error",
+                text: "The name cannot be longer than 50 characters.",
+                icon: "error",
+            })
+        } else {
+            if (validateName($row.data("inputID"), newTitle, $row)) {
+                $row.data("name", newTitle)
+                $name.text(newTitle)
+                $name.css("font-style", "normal")
+                Shiny.setInputValue(inputID, {
+                    "action": "name_change",
+                    "id": rowId,
+                    "name": newTitle
+                }, {priority: "event"})
+            } else {
+                // Name is not valid so we set it back to the old name.
+                $name.text($row.data("name"))
+            }
         }
-    }
     })
 }
