@@ -3,6 +3,7 @@
 export(myDataset)
 export(myDatasetAddRow)
 export(myDatasetDownloadHandler)
+export(myDatasetGetCookie)
 export(myDatasetSetCookie)
 export(myDatasetToggleDownload)
 export(usemyDataset)
