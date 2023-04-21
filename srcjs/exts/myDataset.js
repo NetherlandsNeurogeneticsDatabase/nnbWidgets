@@ -125,6 +125,7 @@ Shiny.addCustomMessageHandler("get-cookie", (data) => {
      * @param name The name of the cookie.
      */
     // Add the cookie.
+    console.log("Looking for cookie: ", data["name"])
     let cookieValue = localStorage.getItem(data["name"])
     console.log("Cookie value: ", cookieValue)
     return cookieValue
