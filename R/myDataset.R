@@ -74,7 +74,11 @@ myDatasetSetCookie <- function(name, msg, session = shiny::getDefaultReactiveDom
 #' @return cookie_value The value of the cookie
 #' @export
 myDatasetGetCookie <- function(name, session = shiny::getDefaultReactiveDomain()){
+  print("Getting cookie with value")
+  print(name)
   cookie_value <- session$sendCustomMessage("get-cookie", list(name = name))
+  print("In R function received cookie")
+  print(cookie_value)
   return(cookie_value)
 }
 
