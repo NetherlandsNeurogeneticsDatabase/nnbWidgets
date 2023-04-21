@@ -119,7 +119,7 @@ Shiny.addCustomMessageHandler("set-cookie", (data) => {
     localStorage.setItem(name, JSON.stringify(msg))
 })
 
-Shiny.addCustomMessageHandler("get-cookie", (data) => {
+Shiny.addCustomMessageHandler("get-cookie", (data), callback => {
     /**
      * Get a cookie.
      * @param name The name of the cookie.
@@ -128,7 +128,7 @@ Shiny.addCustomMessageHandler("get-cookie", (data) => {
     console.log("Looking for cookie: ", data["name"])
     let cookieValue = localStorage.getItem(data["name"])
     console.log("Cookie value: ", cookieValue)
-    return cookieValue
+    callback(cookieValue)
 })
 
 function row_in_table(table, checkParam, paramValue, $ownRow) {

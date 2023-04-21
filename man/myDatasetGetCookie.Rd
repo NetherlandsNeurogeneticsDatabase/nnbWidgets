@@ -4,7 +4,7 @@
 \alias{myDatasetGetCookie}
 \title{Get a cookie}
 \usage{
-myDatasetGetCookie(name, session = shiny::getDefaultReactiveDomain())
+myDatasetGetCookie(name, session = getDefaultReactiveDomain())
 }
 \arguments{
 \item{name}{The name of the cookie}
