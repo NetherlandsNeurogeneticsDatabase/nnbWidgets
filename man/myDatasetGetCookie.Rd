@@ -9,6 +9,9 @@ myDatasetGetCookie(name, session = shiny::getDefaultReactiveDomain())
 \arguments{
 \item{name}{The name of the cookie}
 }
+\value{
+cookie_value The value of the cookie
+}
 \description{
 Get a cookie
 }
